@@ -6,8 +6,6 @@ import json
 import os
 import struct
 import time
-import matplotlib
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 #check whether a value is an ip address or a host name
@@ -36,12 +34,10 @@ def process_csv(csv_file: str) -> pd.DataFrame:
     return df
 
 
-def run_test(server, experiment_time, interval):
-    ip = server
-    port = 5201
+def run_test(server, port, experiment_time, interval):
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.settimeout(10)
-    client.connect((ip, port))
+    client.connect((server, port))
     params = {"tcp": True, "omit": 0, "time": experiment_time, "num": 0,
           "blockcount": 0, "parallel": 1, "len": 131072,
           "pacing_timer": 1000, "client_version": "3.22"}
@@ -67,7 +63,7 @@ def run_test(server, experiment_time, interval):
     if client.recv(1) != bytes([10]):
         raise RuntimeError("server rejected parameters")
 
-    #step 5: open a second connection
+    #step 5: open a second connection to send data
     new_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     new_client.settimeout(10)
     new_client.connect((ip, port))
@@ -108,13 +104,7 @@ def run_test(server, experiment_time, interval):
     client.sendall(body)
 
     #step 10: read the server's results (4-byte length, then that many bytes)
-    header = b""
-    while len(header) < 4:
-        chunk = client.recv(4 - len(header))
-        if not chunk:
-            raise ConnectionError("server closed connection")
-        header += chunk
-    n = int.from_bytes(header, "big")
+    n = int.from_bytes(client.recv(4), "big")
     server_results = b""
     while len(server_results) < n:
         chunk = client.recv(n - len(server_results))
@@ -166,6 +156,11 @@ def parse_args():
         default=30,
         help="max number of servers to try (default: 30)"
     )
+    parser.add_argument(
+        "--out", 
+        default="results",
+        help="directory for CSVs and PDF plots (default: results)"
+    )
     return parser.parse_args()
 
 #main test runner
@@ -176,33 +171,37 @@ def main():
     #try random servers until n succeed or we run out of attempts
     rows = []
     successes = 0
-    for ip in df["IP/HOST"].sample(frac=1).head(args.max_attempts):
+    for _, row in df.sample(frac=1).head(args.max_attempts).iterrows():
         if successes == args.n:
             break
+        ip, port = row["IP/HOST"], int(str(row["PORT"]).split("-")[0])
         try:
-            algorithm, samples = run_test(ip, args.time, args.interval)
+            algorithm, samples = run_test(ip, port, args.time, args.interval)
             for t, goodput in samples:
-                rows.append({"destination": f"{ip}:5201", "algorithm": algorithm,
+                rows.append({"destination": f"{ip}:{port}", "algorithm": algorithm,
                              "time_s": t, "goodput_bps": goodput})
             successes += 1
-            print(f"ok: {ip}:5201")
+            print(f"ok: {ip}:{port}")
         except (OSError, RuntimeError) as e:
-            print(f"failed: {ip}:5201 ({e})")
+            print(f"failed: {ip}:{port} ({e})")
 
     if successes < args.n:
         print(f"shortfall: only {successes} of {args.n} servers succeeded")
     if not rows:
         return
 
+    os.makedirs(args.out, exist_ok=True)
+
     #save raw goodput samples
     data = pd.DataFrame(rows)
-    data.to_csv("goodput.csv", index=False)
+    data.to_csv(os.path.join(args.out, "goodput.csv"), index=False)
+
 
     #summary table (Mbit/s)
     g = data.groupby(["destination", "algorithm"])["goodput_bps"]
     summary = pd.DataFrame({"min": g.min(), "median": g.median(),
                             "mean": g.mean(), "p95": g.quantile(0.95)}) / 1e6
-    summary.to_csv("summary.csv")
+    summary.to_csv(os.path.join(args.out, "summary.csv"))
     print(summary)
 
     #plot goodput over time, one panel per destination
@@ -215,7 +214,7 @@ def main():
         ax.set_ylabel("Mbit/s")
     axes[-1, 0].set_xlabel("time (s)")
     fig.tight_layout()
-    fig.savefig("goodput.pdf")
+    fig.savefig(os.path.join(args.out, "goodput.pdf")) 
 
 
 if __name__ == "__main__":
