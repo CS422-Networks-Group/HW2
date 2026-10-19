@@ -1,0 +1,76 @@
+{
+  "session": "20261018T201911",
+  "kernel": "6.6.87.2-microsoft-standard-WSL2",
+  "requested": 10,
+  "succeeded": 10,
+  "time_s": 60,
+  "interval_s": 1.0,
+  "attempts": [
+    {
+      "run_id": "20261018T201911-01",
+      "destination": "23.105.41.222:5201",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261018T201911-02",
+      "destination": "217.18.95.142:5201",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261018T201911-03",
+      "destination": "45.147.210.189:5200",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261018T201911-04",
+      "destination": "66.35.20.123:30001",
+      "status": "failed",
+      "error": "timed out"
+    },
+    {
+      "run_id": "20261018T201911-05",
+      "destination": "23.81.166.99:5201",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261018T201911-06",
+      "destination": "51.158.1.21:5200",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261018T201911-07",
+      "destination": "23.81.207.31:5201",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261018T201911-08",
+      "destination": "157.250.201.61:5203",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261018T201911-09",
+      "destination": "156.146.40.65:5201",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261018T201911-10",
+      "destination": "185.246.208.67:5201",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261018T201911-11",
+      "destination": "96.45.39.38:30001",
+      "status": "ok",
+      "algorithm": "cubic"
+    }
+  ]
+}
