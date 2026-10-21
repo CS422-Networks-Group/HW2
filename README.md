@@ -2,24 +2,40 @@
 
 ## Running
 
-Must run on Linux or WSL2 (`TCP_INFO` / `TCP_CONGESTION` are Linux socket options).
+Requires Python 3.12 and must run on Linux or WSL2 (`TCP_INFO` / `TCP_CONGESTION` are Linux socket options).
+The repository's `.python-version` pins Python 3.12.10 for version managers such as pyenv, while `pyproject.toml`
+accepts any Python 3.12 patch release and exposes the requirement to Python packaging tools.
 
 ```
-python3 -m venv .venv
+python3.12 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 .venv/bin/python src/main.py [input_csv] [--n 10] [--time 60] [--interval 1.0] [--max-attempts 30] \
-                    [--out results] [--representative IP:PORT]
+                    [--out results] [--representative IP:PORT] [--algorithms cubic reno bbr]
 ```
+
+By default, every selected destination is tested with CUBIC, Reno, and BBR. A destination counts toward `--n` only when
+all requested algorithms finish successfully, so the resulting protocol comparison uses the same destinations.
+With the defaults, ten successful destinations require at least 30 one-minute data transfers.
+
+All requested algorithms must be available in the local Linux kernel. Check them before a long run with:
+
+```
+cat /proc/sys/net/ipv4/tcp_available_congestion_control
+```
+
+If BBR is supported but not loaded, it may need to be enabled first (for example, `sudo modprobe tcp_bbr`). The program
+also performs its own preflight check and exits before contacting any servers if an algorithm cannot be selected.
 
 | option | meaning |
 |---|---|
 | `input_csv` | server list with `IP/HOST` and `PORT` columns (default `data/listed_iperf3_servers.csv`) |
-| `--n` | number of destinations that must complete a test |
+| `--n` | number of destinations that must complete every requested algorithm |
 | `--time` | transfer duration per destination (s) |
 | `--interval` | sampling interval for goodput and TCP stats (s) |
 | `--max-attempts` | max servers tried before reporting a shortfall |
 | `--out` | output directory |
 | `--representative` | destination used for the TCP stats plots (default: the one whose mean goodput is the median across destinations) |
+| `--algorithms` | algorithms to run for every destination (default: `cubic reno bbr`) |
 
 ### Outputs
 
@@ -29,9 +45,9 @@ python3 -m venv .venv
 | `goodput.csv` | goodput-only view of the same samples |
 | `summary.csv` | min / median / mean / p95 goodput (Mbit/s) per destination and algorithm |
 | `run_metadata.json` | session id, host kernel, duration, interval, and every destination attempted (ok / failed + error) |
-| `goodput.pdf` | goodput over time, one panel per destination |
-| `tcp_stats_timeseries.pdf` | Q2(b)(i): snd_cwnd, RTT, loss proxy, goodput over time for the representative destination |
-| `tcp_stats_scatter.pdf` | Q2(b)(ii): snd_cwnd, srtt, retransmissions vs goodput, colored by time |
+| `goodput_<algorithm>.pdf` | goodput over time, one panel per destination; generated once per algorithm |
+| `tcp_stats_timeseries_<algorithm>.pdf` | Q2(b)(i): snd_cwnd, RTT, loss proxy, and goodput over time; generated once per algorithm for one shared representative destination |
+| `tcp_stats_scatter_<algorithm>.pdf` | Q2(b)(ii): snd_cwnd, srtt, and retransmissions vs goodput; generated once per algorithm for the same destination |
 
 ## TCP stats tracing (Q2)
 
@@ -60,6 +76,15 @@ TCP_INFO_FMT = "=8B24I4Q6IQ3Q2I2Q2I2I"   # 232 bytes, kernel >= 5.4
 `=` means native byte order with no implicit padding. The kernel struct is naturally aligned, so the offsets match on x86_64.
 If the kernel returns fewer than 232 bytes, the test fails with an error and nothing is silently misread.
 Tested on `6.6.87.2-microsoft-standard-WSL2` (default congestion control `cubic`).
+
+### Congestion-control comparison
+
+The requested algorithm is applied with `setsockopt(IPPROTO_TCP, TCP_CONGESTION, ...)` before the data socket connects.
+The program immediately reads the option back and records the verified kernel-selected value in every sample. The iPerf3
+control socket keeps the system default because it carries only coordination messages and is not part of the measurement.
+
+The representative destination is shared across algorithms. It is selected from the median of the per-destination means,
+with each algorithm given equal weight, so the TCP plots compare CUBIC, Reno, and BBR over the same network path.
 
 ### Interval measurements
 

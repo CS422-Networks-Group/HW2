@@ -1,0 +1,9 @@
+[project]
+name = "cs422-hw2"
+version = "0.1.0"
+description = "iPerf3-compatible TCP congestion-control experiment client"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "pandas==3.0.6",
+    "matplotlib==3.11.2",
+]
