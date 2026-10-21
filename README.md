@@ -4,34 +4,94 @@
 
 Must run on Linux or WSL2 (`TCP_INFO` / `TCP_CONGESTION` are Linux socket options).
 
+BBR is usually built as a kernel module. Load it and allow unprivileged sockets to select it
+(both reset on reboot / WSL restart; on WSL, `wsl -u root` opens a root shell):
+
+```
+sudo modprobe tcp_bbr
+sudo sysctl -w net.ipv4.tcp_allowed_congestion_control="reno cubic bbr"
+sudo sysctl -w net.ipv4.tcp_wmem="4096 16384 67108864"
+```
+
+The `tcp_wmem` max (default 4 MB) caps the sender's bytes in flight at about 2.7 MB. On a 100+ ms path that limits
+every algorithm to about 2.7 MB / RTT (about 160-220 Mbit/s here) regardless of cwnd, hiding the differences
+between algorithms. `results/part3_sndbuf4MB` is a run with the default limit kept for comparison. The script records
+`tcp_wmem` in `run_metadata.json`, warns when the max is under 16 MB, and logs `sndbuf_limited_frac` /
+`rwnd_limited_frac` (the fraction of each interval the sender was send-buffer / receive-window limited).
+
 ```
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 .venv/bin/python src/main.py [input_csv] [--n 10] [--time 60] [--interval 1.0] [--max-attempts 30] \
+                    [--cc cubic reno bbr] [--reps 3] [--pause 3] [--retries 1] \
                     [--out results] [--representative IP:PORT]
 ```
+
+Or with Docker (after the host setup above; the container uses the host kernel and cannot load modules itself):
+
+```
+docker build -t hw2 .
+docker run --rm --network host -v "$PWD/results:/hw2/results" hw2 [same arguments as main.py]
+```
+
+With no arguments the container runs `src/main.py data/listed_iperf3_servers.csv --out results` with the defaults below.
 
 | option | meaning |
 |---|---|
 | `input_csv` | server list with `IP/HOST` and `PORT` columns (default `data/listed_iperf3_servers.csv`) |
-| `--n` | number of destinations that must complete a test |
-| `--time` | transfer duration per destination (s) |
+| `--n` | number of destinations; servers are probed in random order with a 2 s test until n succeed |
+| `--time` | transfer duration per test (s) |
 | `--interval` | sampling interval for goodput and TCP stats (s) |
-| `--max-attempts` | max servers tried before reporting a shortfall |
+| `--max-attempts` | max servers probed before reporting a shortfall |
+| `--cc` | congestion control algorithms to compare, set on the data socket before connecting |
+| `--reps` | repetitions of every destination x algorithm test |
+| `--pause` | seconds between tests so servers accept the next connection |
+| `--retries` | extra attempts for a failed test before it is recorded as failed |
 | `--out` | output directory |
-| `--representative` | destination used for the TCP stats plots (default: the one whose mean goodput is the median across destinations) |
+| `--representative` | destination for the TCP stats plots (default: among destinations with every algorithm, the one whose mean goodput is the median) |
+
+Commands for the committed results:
+
+```
+.venv/bin/python src/main.py data/part3_servers.csv --n 5 --time 30 --reps 2 --out results/part3   # Q3 (results/part3)
+.venv/bin/python src/main.py --n 10 --time 60 --cc cubic --reps 1           # equivalent of the Q1/Q2 run (results/)
+```
+
+`results/` was produced by an earlier version of the script (before `--cc` / `--reps`) using the default CUBIC,
+so its files lack the `rep` / `order` columns and its scatter plot is colored by time instead of repetition.
+
+### Test order
+
+Every algorithm uses the same destinations, duration, and interval. Each repetition visits every destination,
+and at each destination runs all algorithms back to back. The algorithm order rotates by one each repetition
+(rep 1: cubic, reno, bbr; rep 2: reno, bbr, cubic; rep 3: bbr, cubic, reno; ...) so no algorithm always goes first.
+The actual order, start time, attempts, and outcome of every test are in `run_metadata.json` under `schedule`.
 
 ### Outputs
 
 | file | contents |
 |---|---|
-| `tcp_stats.csv` | one row per sample: run id, destination, algorithm, goodput, and decoded TCP stats |
+| `tcp_stats.csv` | one row per sample: run id, rep, order, destination, algorithm, goodput, and decoded TCP stats |
 | `goodput.csv` | goodput-only view of the same samples |
 | `summary.csv` | min / median / mean / p95 goodput (Mbit/s) per destination and algorithm |
-| `run_metadata.json` | session id, host kernel, duration, interval, and every destination attempted (ok / failed + error) |
-| `goodput.pdf` | goodput over time, one panel per destination |
-| `tcp_stats_timeseries.pdf` | Q2(b)(i): snd_cwnd, RTT, loss proxy, goodput over time for the representative destination |
-| `tcp_stats_scatter.pdf` | Q2(b)(ii): snd_cwnd, srtt, retransmissions vs goodput, colored by time |
+| `runs.csv` | per-run aggregates: mean goodput, mean srtt, min_rtt, queueing delay, mean cwnd, BDP estimate, cwnd/BDP, retransmissions |
+| `algorithm_comparison.csv` | mean and std across repetitions of the per-run aggregates, per destination and algorithm |
+| `algorithm_overall.csv` | mean / median / std of the per-run aggregates per algorithm over all destinations |
+| `run_metadata.json` | session id, host kernel, settings, destination selection attempts, and the full test schedule |
+| `goodput.pdf` | goodput over time, one panel per destination, one color per algorithm |
+| `variability.pdf` | per-run mean goodput and mean srtt for every destination and algorithm |
+| `tcp_stats_timeseries.pdf` | Q2(b)(i)/Q3(a): snd_cwnd, srtt, loss proxy, goodput over time for the representative destination; one column per algorithm, shared y axes, one color per repetition |
+| `tcp_stats_scatter.pdf` | Q2(b)(ii)/Q3(a): snd_cwnd, srtt, retransmissions vs goodput; one row per algorithm, shared axes |
+
+### Per-run aggregates (`runs.csv`)
+
+- `mean_queue_delay_ms` = mean(srtt - min_rtt): RTT inflation above the propagation delay, i.e. queueing
+- `bdp_bytes` = p95(delivery_rate) x min_rtt: bandwidth-delay product estimated from the best sustained delivery rate
+- `cwnd_over_bdp` = mean(cwnd_bytes) / bdp_bytes: above 1, the flow keeps more in flight than the pipe holds and the excess sits in queues
+- `retrans_pct_bytes` = 100 x sum(retrans_bytes) / bytes_sent
+- `sndbuf_limited_frac` / `rwnd_limited_frac` = mean fraction of each interval limited by the local send buffer / receive window (from tcpi_sndbuf_limited / tcpi_rwnd_limited, in µs)
+
+`data/part3_servers.csv` lists the 5 destinations used for Q3, originally chosen at random from the full list.
 
 ## TCP stats tracing (Q2)
 
