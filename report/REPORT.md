@@ -149,7 +149,53 @@ Anomalies:
 
 3a.) We noticed that cubic had more consistency with reno regarding RTT, however reno demonstrated faster RTTs + more consistent goodput. BBRs output seemed to be more "random", lacking patterns with goodput and RTT.
 
+The plots below come from session `20261020T191606` ([`results/run_metadata.json`](../results/run_metadata.json)): 60 s tests at 1 s sampling, with CUBIC, Reno, and BBR each run against the same destinations. The TCP stats plots use the same representative destination, 194.24.162.86:4000, for all three algorithms.
+
+#### Goodput over time
+
+![Goodput over time, CUBIC](figures/goodput_cubic.png)
+
+*Figure 3a: Goodput over time per destination (CUBIC). Source: [`results/goodput_cubic.pdf`](../results/goodput_cubic.pdf).*
+
+![Goodput over time, Reno](figures/goodput_reno.png)
+
+*Figure 3b: Goodput over time per destination (Reno). Source: [`results/goodput_reno.pdf`](../results/goodput_reno.pdf).*
+
+![Goodput over time, BBR](figures/goodput_bbr.png)
+
+*Figure 3c: Goodput over time per destination (BBR). Source: [`results/goodput_bbr.pdf`](../results/goodput_bbr.pdf).*
+
+#### TCP stats over time (194.24.162.86:4000)
+
+![TCP stats over time, CUBIC](figures/tcp_stats_timeseries_cubic.png)
+
+*Figure 4a: snd_cwnd, RTT, retransmitted segments, and goodput over time (CUBIC). Source: [`results/tcp_stats_timeseries_cubic.pdf`](../results/tcp_stats_timeseries_cubic.pdf).*
+
+![TCP stats over time, Reno](figures/tcp_stats_timeseries_reno.png)
+
+*Figure 4b: snd_cwnd, RTT, retransmitted segments, and goodput over time (Reno). Source: [`results/tcp_stats_timeseries_reno.pdf`](../results/tcp_stats_timeseries_reno.pdf).*
+
+![TCP stats over time, BBR](figures/tcp_stats_timeseries_bbr.png)
+
+*Figure 4c: snd_cwnd, RTT, retransmitted segments, and goodput over time (BBR). Source: [`results/tcp_stats_timeseries_bbr.pdf`](../results/tcp_stats_timeseries_bbr.pdf).*
+
+#### TCP stats vs goodput (194.24.162.86:4000)
+
+![TCP stats vs goodput, CUBIC](figures/tcp_stats_scatter_cubic.png)
+
+*Figure 5a: snd_cwnd, srtt, and retransmitted segments vs goodput, colored by time (CUBIC). Source: [`results/tcp_stats_scatter_cubic.pdf`](../results/tcp_stats_scatter_cubic.pdf).*
+
+![TCP stats vs goodput, Reno](figures/tcp_stats_scatter_reno.png)
+
+*Figure 5b: snd_cwnd, srtt, and retransmitted segments vs goodput, colored by time (Reno). Source: [`results/tcp_stats_scatter_reno.pdf`](../results/tcp_stats_scatter_reno.pdf).*
+
+![TCP stats vs goodput, BBR](figures/tcp_stats_scatter_bbr.png)
+
+*Figure 5c: snd_cwnd, srtt, and retransmitted segments vs goodput, colored by time (BBR). Source: [`results/tcp_stats_scatter_bbr.pdf`](../results/tcp_stats_scatter_bbr.pdf).*
+
 3b.)
+
+```
 Start up with the minimum window size
 
 ONCE EVERY ROUND TRIP
@@ -181,7 +227,8 @@ ONCE EVERY ROUND TRIP
            Shrink more the further above target it is (never more than half).
 
   6. Never let the window be smaller than the minimum window size
-     or bigger than about twice what the path can hold. 
+     or bigger than about twice what the path can hold.
+```
 
 ## AI use
 
