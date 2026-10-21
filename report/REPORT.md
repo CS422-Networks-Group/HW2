@@ -147,7 +147,7 @@ Anomalies:
 
 ## Part 3: Algorithm comparison and design
 
-TODO. The comparison run (`--n 5 --time 30 --reps 2 --cc cubic reno bbr`) still needs to be written up here.
+3a.) We noticed that cubic had more consistency with reno regarding RTT, however reno demonstrated faster RTTs + more consistent goodput. BBRs output seemed to be more "random", lacking patterns with goodput and RTT
 
 ## AI use
 
