@@ -1,76 +1,379 @@
 {
-  "session": "20261018T201911",
+  "session": "20261020T191606",
   "kernel": "6.6.87.2-microsoft-standard-WSL2",
   "requested": 10,
-  "succeeded": 10,
+  "succeeded": 2,
+  "algorithms": [
+    "cubic",
+    "reno",
+    "bbr"
+  ],
   "time_s": 60,
   "interval_s": 1.0,
   "attempts": [
     {
-      "run_id": "20261018T201911-01",
-      "destination": "23.105.41.222:5201",
+      "run_id": "20261020T191606-01-cubic",
+      "destination": "170.83.216.19:5201",
       "status": "ok",
       "algorithm": "cubic"
     },
     {
-      "run_id": "20261018T201911-02",
-      "destination": "217.18.95.142:5201",
-      "status": "ok",
-      "algorithm": "cubic"
-    },
-    {
-      "run_id": "20261018T201911-03",
-      "destination": "45.147.210.189:5200",
-      "status": "ok",
-      "algorithm": "cubic"
-    },
-    {
-      "run_id": "20261018T201911-04",
-      "destination": "66.35.20.123:30001",
+      "run_id": "20261020T191606-01-reno",
+      "destination": "170.83.216.19:5201",
       "status": "failed",
-      "error": "timed out"
+      "algorithm": "reno",
+      "error": "[Errno 104] Connection reset by peer"
     },
     {
-      "run_id": "20261018T201911-05",
-      "destination": "23.81.166.99:5201",
+      "run_id": "20261020T191606-02-cubic",
+      "destination": "207.211.214.65:5201",
       "status": "ok",
       "algorithm": "cubic"
     },
     {
-      "run_id": "20261018T201911-06",
-      "destination": "51.158.1.21:5200",
+      "run_id": "20261020T191606-02-reno",
+      "destination": "207.211.214.65:5201",
+      "status": "failed",
+      "algorithm": "reno",
+      "error": "[Errno 111] Connection refused"
+    },
+    {
+      "run_id": "20261020T191606-03-cubic",
+      "destination": "69.168.185.43:8070",
       "status": "ok",
       "algorithm": "cubic"
     },
     {
-      "run_id": "20261018T201911-07",
-      "destination": "23.81.207.31:5201",
+      "run_id": "20261020T191606-03-reno",
+      "destination": "69.168.185.43:8070",
+      "status": "ok",
+      "algorithm": "reno"
+    },
+    {
+      "run_id": "20261020T191606-03-bbr",
+      "destination": "69.168.185.43:8070",
+      "status": "ok",
+      "algorithm": "bbr"
+    },
+    {
+      "run_id": "20261020T191606-04-cubic",
+      "destination": "185.93.1.65:5201",
+      "status": "failed",
+      "algorithm": "cubic",
+      "error": "server busy or closed connection"
+    },
+    {
+      "run_id": "20261020T191606-05-cubic",
+      "destination": "23.106.226.75:5201",
+      "status": "failed",
+      "algorithm": "cubic",
+      "error": "server busy or closed connection"
+    },
+    {
+      "run_id": "20261020T191606-06-cubic",
+      "destination": "195.95.177.10:5201",
       "status": "ok",
       "algorithm": "cubic"
     },
     {
-      "run_id": "20261018T201911-08",
-      "destination": "157.250.201.61:5203",
+      "run_id": "20261020T191606-06-reno",
+      "destination": "195.95.177.10:5201",
+      "status": "ok",
+      "algorithm": "reno"
+    },
+    {
+      "run_id": "20261020T191606-06-bbr",
+      "destination": "195.95.177.10:5201",
+      "status": "failed",
+      "algorithm": "bbr",
+      "error": "[Errno 111] Connection refused"
+    },
+    {
+      "run_id": "20261020T191606-07-cubic",
+      "destination": "185.182.195.76:5201",
+      "status": "failed",
+      "algorithm": "cubic",
+      "error": "server busy or closed connection"
+    },
+    {
+      "run_id": "20261020T191606-08-cubic",
+      "destination": "212.76.127.243:5201",
       "status": "ok",
       "algorithm": "cubic"
     },
     {
-      "run_id": "20261018T201911-09",
-      "destination": "156.146.40.65:5201",
+      "run_id": "20261020T191606-08-reno",
+      "destination": "212.76.127.243:5201",
+      "status": "failed",
+      "algorithm": "reno",
+      "error": "[Errno 104] Connection reset by peer"
+    },
+    {
+      "run_id": "20261020T191606-09-cubic",
+      "destination": "148.230.59.38:30001",
       "status": "ok",
       "algorithm": "cubic"
     },
     {
-      "run_id": "20261018T201911-10",
-      "destination": "185.246.208.67:5201",
+      "run_id": "20261020T191606-09-reno",
+      "destination": "148.230.59.38:30001",
+      "status": "failed",
+      "algorithm": "reno",
+      "error": "[Errno 111] Connection refused"
+    },
+    {
+      "run_id": "20261020T191606-10-cubic",
+      "destination": "202.22.159.9:5202",
       "status": "ok",
       "algorithm": "cubic"
     },
     {
-      "run_id": "20261018T201911-11",
-      "destination": "96.45.39.38:30001",
+      "run_id": "20261020T191606-10-reno",
+      "destination": "202.22.159.9:5202",
+      "status": "failed",
+      "algorithm": "reno",
+      "error": "[Errno 111] Connection refused"
+    },
+    {
+      "run_id": "20261020T191606-11-cubic",
+      "destination": "194.127.172.176:5200",
       "status": "ok",
       "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261020T191606-11-reno",
+      "destination": "194.127.172.176:5200",
+      "status": "failed",
+      "algorithm": "reno",
+      "error": "[Errno 111] Connection refused"
+    },
+    {
+      "run_id": "20261020T191606-12-cubic",
+      "destination": "81.17.61.145:5201",
+      "status": "failed",
+      "algorithm": "cubic",
+      "error": "[Errno 32] Broken pipe"
+    },
+    {
+      "run_id": "20261020T191606-13-cubic",
+      "destination": "23.249.60.154:30001",
+      "status": "failed",
+      "algorithm": "cubic",
+      "error": "[Errno 111] Connection refused"
+    },
+    {
+      "run_id": "20261020T191606-14-cubic",
+      "destination": "185.102.217.170:5201",
+      "status": "failed",
+      "algorithm": "cubic",
+      "error": "[Errno 32] Broken pipe"
+    },
+    {
+      "run_id": "20261020T191606-15-cubic",
+      "destination": "89.187.165.1:5201",
+      "status": "failed",
+      "algorithm": "cubic",
+      "error": "server busy or closed connection"
+    },
+    {
+      "run_id": "20261020T191606-16-cubic",
+      "destination": "69.48.238.200:30001",
+      "status": "failed",
+      "algorithm": "cubic",
+      "error": "[Errno 32] Broken pipe"
+    },
+    {
+      "run_id": "20261020T191606-17-cubic",
+      "destination": "185.3.160.57:5201",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261020T191606-17-reno",
+      "destination": "185.3.160.57:5201",
+      "status": "failed",
+      "algorithm": "reno",
+      "error": "[Errno 111] Connection refused"
+    },
+    {
+      "run_id": "20261020T191606-18-cubic",
+      "destination": "82.197.188.129:5201",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261020T191606-18-reno",
+      "destination": "82.197.188.129:5201",
+      "status": "failed",
+      "algorithm": "reno",
+      "error": "[Errno 111] Connection refused"
+    },
+    {
+      "run_id": "20261020T191606-19-cubic",
+      "destination": "209.58.159.68:5201",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261020T191606-19-reno",
+      "destination": "209.58.159.68:5201",
+      "status": "ok",
+      "algorithm": "reno"
+    },
+    {
+      "run_id": "20261020T191606-19-bbr",
+      "destination": "209.58.159.68:5201",
+      "status": "failed",
+      "algorithm": "bbr",
+      "error": "[Errno 104] Connection reset by peer"
+    },
+    {
+      "run_id": "20261020T191606-20-cubic",
+      "destination": "195.162.68.38:5201",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261020T191606-20-reno",
+      "destination": "195.162.68.38:5201",
+      "status": "failed",
+      "algorithm": "reno",
+      "error": "[Errno 104] Connection reset by peer"
+    },
+    {
+      "run_id": "20261020T191606-21-cubic",
+      "destination": "23.106.58.162:5202",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261020T191606-21-reno",
+      "destination": "23.106.58.162:5202",
+      "status": "failed",
+      "algorithm": "reno",
+      "error": "[Errno 104] Connection reset by peer"
+    },
+    {
+      "run_id": "20261020T191606-22-cubic",
+      "destination": "154.81.51.4:5201",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261020T191606-22-reno",
+      "destination": "154.81.51.4:5201",
+      "status": "failed",
+      "algorithm": "reno",
+      "error": "[Errno 104] Connection reset by peer"
+    },
+    {
+      "run_id": "20261020T191606-23-cubic",
+      "destination": "194.24.162.86:4000",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261020T191606-23-reno",
+      "destination": "194.24.162.86:4000",
+      "status": "ok",
+      "algorithm": "reno"
+    },
+    {
+      "run_id": "20261020T191606-23-bbr",
+      "destination": "194.24.162.86:4000",
+      "status": "ok",
+      "algorithm": "bbr"
+    },
+    {
+      "run_id": "20261020T191606-24-cubic",
+      "destination": "23.105.9.80:5201",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261020T191606-24-reno",
+      "destination": "23.105.9.80:5201",
+      "status": "failed",
+      "algorithm": "reno",
+      "error": "[Errno 104] Connection reset by peer"
+    },
+    {
+      "run_id": "20261020T191606-25-cubic",
+      "destination": "23.19.208.9:5201",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261020T191606-25-reno",
+      "destination": "23.19.208.9:5201",
+      "status": "ok",
+      "algorithm": "reno"
+    },
+    {
+      "run_id": "20261020T191606-25-bbr",
+      "destination": "23.19.208.9:5201",
+      "status": "failed",
+      "algorithm": "bbr",
+      "error": "[Errno 104] Connection reset by peer"
+    },
+    {
+      "run_id": "20261020T191606-26-cubic",
+      "destination": "169.150.242.129:5201",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261020T191606-26-reno",
+      "destination": "169.150.242.129:5201",
+      "status": "failed",
+      "algorithm": "reno",
+      "error": "[Errno 111] Connection refused"
+    },
+    {
+      "run_id": "20261020T191606-27-cubic",
+      "destination": "88.213.191.247:5200",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261020T191606-27-reno",
+      "destination": "88.213.191.247:5200",
+      "status": "failed",
+      "algorithm": "reno",
+      "error": "[Errno 111] Connection refused"
+    },
+    {
+      "run_id": "20261020T191606-28-cubic",
+      "destination": "185.152.65.113:5201",
+      "status": "failed",
+      "algorithm": "cubic",
+      "error": "[Errno 32] Broken pipe"
+    },
+    {
+      "run_id": "20261020T191606-29-cubic",
+      "destination": "185.76.9.135:5201",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261020T191606-29-reno",
+      "destination": "185.76.9.135:5201",
+      "status": "failed",
+      "algorithm": "reno",
+      "error": "[Errno 104] Connection reset by peer"
+    },
+    {
+      "run_id": "20261020T191606-30-cubic",
+      "destination": "96.45.40.45:30001",
+      "status": "ok",
+      "algorithm": "cubic"
+    },
+    {
+      "run_id": "20261020T191606-30-reno",
+      "destination": "96.45.40.45:30001",
+      "status": "failed",
+      "algorithm": "reno",
+      "error": "[Errno 104] Connection reset by peer"
     }
   ]
 }
