@@ -185,4 +185,4 @@ ONCE EVERY ROUND TRIP
 
 ## AI use
 
-TODO.
+Generated code and assisted with report + analysis using Codex and Claude Code.
