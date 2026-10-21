@@ -26,6 +26,15 @@ cat /proc/sys/net/ipv4/tcp_available_congestion_control
 If BBR is supported but not loaded, it may need to be enabled first (for example, `sudo modprobe tcp_bbr`). The program
 also performs its own preflight check and exits before contacting any servers if an algorithm cannot be selected.
 
+Or with Docker (after the host setup above; the container uses the host kernel and cannot load modules itself):
+
+```
+docker build -t hw2 .
+docker run --rm --network host -v "$PWD/results:/hw2/results" hw2 [same arguments as main.py]
+```
+
+With no arguments the container runs `src/main.py data/listed_iperf3_servers.csv --out results` with the defaults below.
+
 | option | meaning |
 |---|---|
 | `input_csv` | server list with `IP/HOST` and `PORT` columns (default `data/listed_iperf3_servers.csv`) |
