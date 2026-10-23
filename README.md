@@ -9,13 +9,28 @@ accepts any Python 3.12 patch release and exposes the requirement to Python pack
 ```
 python3.12 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-.venv/bin/python src/main.py [input_csv] [--n 10] [--time 60] [--interval 1.0] [--max-attempts 30] \
-                    [--out results] [--representative IP:PORT] [--algorithms cubic reno bbr]
+.venv/bin/python src/main.py [input_csv] [--n 10] [--time 60] [--interval 1.0] [--reps 3] [--max-attempts 30] \
+                    [--retries 1] [--seed SEED] [--out results] [--representative IP:PORT] [--algorithms cubic reno bbr]
 ```
 
-By default, every selected destination is tested with CUBIC, Reno, and BBR. A destination counts toward `--n` only when
-all requested algorithms finish successfully, so the resulting protocol comparison uses the same destinations.
-With the defaults, ten successful destinations require at least 30 one-minute data transfers.
+By default, every selected destination is tested `--reps` times with each of CUBIC, Reno, and BBR. A destination counts
+toward `--n` only when every repetition of every requested algorithm finishes successfully, so the protocol comparison
+uses the same destinations. With the defaults, ten successful destinations require at least 90 one-minute data transfers.
+A failed test (for example, the server is still busy with the previous test) is logged and retried once after 2 s
+(`--retries`); if it fails again, the destination is discarded and the next server is tried.
+
+Test order: for each destination, repetition *r* runs the algorithm list rotated by *r − 1* (rep 1: cubic, reno, bbr;
+rep 2: reno, bbr, cubic; rep 3: bbr, cubic, reno), so each algorithm runs in each position equally often. The number of
+repetitions, the order, and every test's position and outcome are saved in `run_metadata.json`.
+
+The report's results came from two runs, each saved in its own directory:
+
+```
+# Parts 1 and 2: CUBIC only, one run per destination
+.venv/bin/python src/main.py data/listed_iperf3_servers.csv --n 10 --time 60 --interval 1.0 --algorithms cubic --reps 1 --out results/part1_2
+# Part 3: CUBIC, Reno, and BBR, repeated
+.venv/bin/python src/main.py data/listed_iperf3_servers.csv --out results/part3
+```
 
 All requested algorithms must be available in the local Linux kernel. Check them before a long run with:
 
@@ -33,7 +48,7 @@ docker build -t hw2 .
 docker run --rm --network host -v "$PWD/results:/hw2/results" hw2 [same arguments as main.py]
 ```
 
-With no arguments the container runs `src/main.py data/listed_iperf3_servers.csv --out results` with the defaults below.
+With no arguments the container runs the Part 3 pipeline, `src/main.py data/listed_iperf3_servers.csv --out results/part3`, with the defaults below.
 
 | option | meaning |
 |---|---|
@@ -41,7 +56,10 @@ With no arguments the container runs `src/main.py data/listed_iperf3_servers.csv
 | `--n` | number of destinations that must complete every requested algorithm |
 | `--time` | transfer duration per destination (s) |
 | `--interval` | sampling interval for goodput and TCP stats (s) |
+| `--reps` | repetitions of each algorithm per destination (default 3) |
 | `--max-attempts` | max servers tried before reporting a shortfall |
+| `--retries` | extra tries for a failed test before the destination is discarded (default 1) |
+| `--seed` | seed for the server shuffle (default: random; the value used is saved in `run_metadata.json`) |
 | `--out` | output directory |
 | `--representative` | destination used for the TCP stats plots (default: the one whose mean goodput is the median across destinations) |
 | `--algorithms` | algorithms to run for every destination (default: `cubic reno bbr`) |
@@ -50,12 +68,12 @@ With no arguments the container runs `src/main.py data/listed_iperf3_servers.csv
 
 | file | contents |
 |---|---|
-| `tcp_stats.csv` | one row per sample: run id, destination, algorithm, goodput, and decoded TCP stats |
+| `tcp_stats.csv` | one row per sample: run id, destination, repetition, position in the test order, algorithm, goodput, and decoded TCP stats |
 | `goodput.csv` | goodput-only view of the same samples |
 | `summary.csv` | min / median / mean / p95 goodput (Mbit/s) per destination and algorithm |
-| `run_metadata.json` | session id, host kernel, duration, interval, and every destination attempted (ok / failed + error) |
-| `goodput_<algorithm>.pdf` | goodput over time, one panel per destination; generated once per algorithm |
-| `tcp_stats_timeseries_<algorithm>.pdf` | Q2(b)(i): snd_cwnd, RTT, loss proxy, and goodput over time; generated once per algorithm for one shared representative destination |
+| `run_metadata.json` | session id, host kernel, seed, destinations used, duration, interval, repetitions, test order, retries, and every test attempted (start time, ok / failed + error) |
+| `goodput_<algorithm>.pdf` | goodput over time, one panel per destination and one line per repetition; generated once per algorithm |
+| `tcp_stats_timeseries_<algorithm>.pdf` | Q2(b)(i): snd_cwnd, RTT, loss proxy, and goodput over time, one line per repetition; generated once per algorithm for one shared representative destination |
 | `tcp_stats_scatter_<algorithm>.pdf` | Q2(b)(ii): snd_cwnd, srtt, and retransmissions vs goodput; generated once per algorithm for the same destination |
 
 ## TCP stats tracing (Q2)
@@ -89,7 +107,8 @@ Tested on `6.6.87.2-microsoft-standard-WSL2` (default congestion control `cubic`
 ### Congestion-control comparison
 
 The requested algorithm is applied with `setsockopt(IPPROTO_TCP, TCP_CONGESTION, ...)` before the data socket connects.
-The program immediately reads the option back and records the verified kernel-selected value in every sample. The iPerf3
+The program reads the option back before connecting and again after the transfer, and records the kernel-reported value
+in every sample (a test whose data socket ended on a different algorithm fails). The iPerf3
 control socket keeps the system default because it carries only coordination messages and is not part of the measurement.
 
 The representative destination is shared across algorithms. It is selected from the median of the per-destination means,

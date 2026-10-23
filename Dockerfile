@@ -23,4 +23,4 @@ COPY data/ data/
 
 #arguments after the image name replace CMD, e.g. docker run ... hw2 --n 5 --time 30 --reps 2
 ENTRYPOINT ["python", "src/main.py"]
-CMD ["data/listed_iperf3_servers.csv", "--out", "results"]
+CMD ["data/listed_iperf3_servers.csv", "--out", "results/part3"]
