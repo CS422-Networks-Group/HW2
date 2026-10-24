@@ -1,6 +1,6 @@
 # CS 422 HW2 Report
 
-Repository: [CS422-Networks-Group/HW2](https://github.com/CS422-Networks-Group/HW2). Code links below point to the [`hw2-fixes`](https://github.com/CS422-Networks-Group/HW2/tree/hw2-fixes) branch. Parts 1 and 2 use the CUBIC-only run in `results/part1_2/` (session `20261018T201911`), produced by the same measurement code at commit [`54b78a9`](https://github.com/CS422-Networks-Group/HW2/tree/54b78a96180478b7f7a17f0a46f5614d0260b5d9), which wrote single-algorithm plots (`goodput.pdf`, `tcp_stats_timeseries.pdf`, `tcp_stats_scatter.pdf`). Part 3 uses the repeated CUBIC/Reno/BBR run in `results/part3/`, with one file per algorithm (`goodput_<algorithm>.pdf`, ...).
+Repository: [CS422-Networks-Group/HW2](https://github.com/CS422-Networks-Group/HW2). Code links below point to the [`hw2-fixes`](https://github.com/CS422-Networks-Group/HW2/tree/hw2-fixes) branch. Parts 1 and 2 use the CUBIC-only run in `results/part1_2/`, made with the same measurement code at commit [`54b78a9`](https://github.com/CS422-Networks-Group/HW2/tree/54b78a96180478b7f7a17f0a46f5614d0260b5d9) (hence the single-algorithm file names). Part 3 uses the run in `results/part3/`.
 
 ## Setup and reproduction
 
@@ -56,11 +56,11 @@ The client talks to the iperf3 server over plain sockets and never calls the `ip
 4. **Transmission** ([L182–L197](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L182-L197)): after `TEST_START` and `TEST_RUNNING`, send 128 KiB blocks until `--time` seconds have passed.
 5. **Termination** ([L201–L224](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L201-L224)): send `TEST_END`, exchange JSON results, read `DISPLAY_RESULTS`, send `IPERF_DONE`, and close both sockets.
 
-Every failure raises an exception that [`run_destination()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L311-L340) logs. The test is retried once after 2 s (`--retries`, default 1), and if it fails again [`main()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L434-L447) moves on to the next server. A busy or overloaded server replies with `ACCESS_DENIED` instead of `PARAM_EXCHANGE`, and a server that rejects the parameters replies with something other than `CREATE_STREAMS`; both fail the state check. Both sockets have a 10 s timeout, so a server that never answers raises `socket.timeout` (66.35.20.123:30001 failed this way in our run). If the server closes the connection early, the next read comes back empty or raises `ConnectionResetError`.
+Every failure raises an exception that [`run_destination()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L311-L340) logs, and the test is retried once after 2 s. If the retry also fails, [`main()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L434-L447) moves on to the next server. A busy or overloaded server replies with `ACCESS_DENIED` instead of `PARAM_EXCHANGE`, and a server that rejects the parameters replies with something other than `CREATE_STREAMS`; both fail the state check. Both sockets have a 10 s timeout, so a server that never answers raises `socket.timeout` (66.35.20.123:30001 failed this way in our run). If the server closes the connection early, the next read comes back empty or raises `ConnectionResetError`.
 
 ### (b) Destination selection
 
-`main()` shuffles the server list (the shuffle seed is saved in `run_metadata.json`, and `--seed` repeats it) and tries servers in that order until `--n` destinations succeed or `--max-attempts` (default 30) servers have been tried. Each attempt is logged in `run_metadata.json` with its address, port, start time, and outcome, and a shortfall prints `shortfall: only k of n servers succeeded`. The Parts 1–2 run asked for 10 servers and got 10 after 11 attempts, so there was no shortfall (that run predates the retry). **TODO:** the Part 3 run asked for 10 servers and got **k** after **m** attempts (from `results/part3/run_metadata.json`); state any shortfall.
+`main()` shuffles the server list and tries servers in that order until `--n` destinations succeed or `--max-attempts` (default 30) servers have been tried. Each attempt is logged in `run_metadata.json` with its address, port, and outcome, and a shortfall prints `shortfall: only k of n servers succeeded`. The Parts 1–2 run asked for 10 servers and got 10 after 11 attempts, so there was no shortfall. **TODO:** Part 3 run: servers requested, kept, and tried; any shortfall.
 
 ### (c) Goodput
 
@@ -90,6 +90,8 @@ Summary in Mbit/s ([`results/part1_2/summary.csv`](https://github.com/CS422-Netw
 | 96.45.39.38:30001 | cubic | 9.2 | 29.4 | 32.5 | 93.1 |
 | 185.246.208.67:5201 | cubic | 3.1 | 17.1 | 19.9 | 35.6 |
 | 156.146.40.65:5201 | cubic | 2.9 | 4.6 | 17.7 | 64.5 |
+
+The same statistics for every destination and algorithm (CUBIC, Reno, BBR) are in the Part 3(a) summary table.
 
 ## Part 2: TCP stats tracing
 
@@ -157,9 +159,7 @@ Anomalies:
 
 ### (a) Comparing CUBIC, Reno, and BBR
 
-**TODO:** rerun Part 3 with the command above, then fill in this section from the new `results/part3/` data.
-
-**Method.** Every algorithm used the same destinations, a 60 s transfer, and 1 s sampling. [`set_congestion_control()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L106-L120) sets `TCP_CONGESTION` on the iperf3 *data* socket before `connect()` and reads it back. After the transfer, [`iperf3_test()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L198-L199) reads `TCP_CONGESTION` from the established connection again. That value goes in the `algorithm` column of every sample, and the test fails if it differs from the requested algorithm. Each destination ran **3 repetitions** of each algorithm. Repetition *r* runs the algorithm list rotated by *r − 1* ([`rep_order()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L305-L309)), so each algorithm runs first, second, and third once:
+**Method.** Every algorithm used the same destinations, a 60 s transfer, and 1 s sampling. The algorithm is set on the data socket before `connect()` ([`set_congestion_control()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L106-L120)), and the algorithm actually used is read back from the connection after the transfer ([L198–L199](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L198-L199)) and stored with every sample. Each destination ran **3 repetitions** of each algorithm. Repetition *r* runs the algorithm list rotated by *r − 1* ([`rep_order()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L305-L309)), so each algorithm runs first, second, and third once:
 
 | Rep | Order |
 | --- | --- |
@@ -167,11 +167,11 @@ Anomalies:
 | 2 | reno, bbr, cubic |
 | 3 | bbr, cubic, reno |
 
-A destination counts only if all 9 of its tests succeed, each allowed one retry after 2 s ([`run_destination()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L311-L340)). **TODO:** destinations used, failures, and session id (from `results/part3/run_metadata.json`).
+A destination counts only if all 9 of its tests succeed ([`run_destination()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L311-L340)). **TODO:** destinations used and failures.
 
 The TCP stats plots use one representative destination, **TODO: ip:port**, for all three algorithms. It is chosen by [`pick_representative()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L300-L303) and plotted for each algorithm in [`main()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L474-L483). Each plot has one line per repetition, and every axis has the same range in all three algorithms' plots ([`axis_limits()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L342-L348)).
 
-**TODO:** regenerate the PNGs in `report/figures/` from the new PDFs in `results/part3/`.
+**TODO:** regenerate the figures below from `results/part3/`.
 
 #### Goodput over time
 
@@ -217,7 +217,7 @@ The TCP stats plots use one representative destination, **TODO: ip:port**, for a
 
 #### Summary
 
-**TODO:** goodput min / median / mean / p95 per destination and algorithm, from [`results/part3/summary.csv`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/results/part3/summary.csv).
+Goodput in Mbit/s ([`results/part3/summary.csv`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/results/part3/summary.csv)). **TODO:** fill in.
 
 | Destination | Algorithm | Min | Median | Mean | p95 |
 | --- | --- | --- | --- | --- | --- |
@@ -225,14 +225,14 @@ The TCP stats plots use one representative destination, **TODO: ip:port**, for a
 
 #### Observations
 
-**TODO**, from the new data. The spec asks for each of these:
+**TODO:**
 
 - Which network conditions each algorithm does better in, for throughput and for RTT, and why, using the measurements.
 - How the results relate to congestion window size, RTT, queueing, loss, and the bandwidth-delay product.
-- Variability across runs (the 3 repetitions).
+- Variability across runs.
 - The limits of comparing algorithms over changing public Internet paths.
 
-Our first, single-run session observed that CUBIC and Reno had similar RTTs, Reno had lower RTT and steadier goodput, and BBR looked more random. Check whether this still holds.
+**TODO:** the old single run suggested Reno had lower RTT and steadier goodput, and BBR was more random. Check against the new data, then delete this note.
 
 ### (b) Designing a congestion control algorithm
 
@@ -271,26 +271,7 @@ ONCE EVERY ROUND TRIP
      or bigger than about twice what the path can hold.
 ```
 
-**Design choices.**
-
-- **Extra delay is the main signal.** srtt rising above the fastest recent RTT means our own packets are queueing. Reacting to it keeps RTT low and backs off before the buffer overflows, instead of waiting for loss as CUBIC and Reno do.
-- **The loss response depends on extra delay.** Loss with a large extra delay means a queue really filled, so the window drops to 60%. Loss with little extra delay is more likely random loss or a policer, so the window drops only to 90%. CUBIC (0.7×) and Reno (0.5×) cut the same amount either way, which costs throughput on lossy paths with no real queue.
-- **Start-up ends on delay, not loss.** Doubling reaches the path's capacity in a few round trips, like slow start. Stopping when extra delay becomes noticeable avoids the overshoot we saw in Part 2, where cwnd reached 2172 segments at 1 s and 96% of the run's retransmissions happened in the first 3 s.
-- **The goodput check.** If the last increase didn't raise goodput, the path is already full and a bigger window would only build a queue, so the window grows only slightly.
-- **Decrease in proportion to the queue, capped at half.** A large queue is drained quickly, but a single noisy RTT sample can't collapse the window.
-- **Bounds.** The minimum window keeps ACKs flowing. The cap of about twice the path's capacity stops the window from growing without limit when the sender isn't using it.
-- **Timeout resets to start-up.** After a timeout the ACK clock is lost, so the algorithm has to re-probe the path from the minimum window.
-
-**Fairness and convergence (expected).**
-
-- **Between flows using this algorithm.** Flows sharing a bottleneck see the same queueing delay, so they are below or above the target together. Below it each adds a few packets per round trip; above it each removes the same fraction of its window. Additive increase with proportional decrease moves windows toward equal shares (Chiu and Jain, 1989). The total rate oscillates around the point where extra delay ≈ target rather than settling on one value.
-- **RTT unfairness.** Increases happen once per round trip, so flows with shorter RTTs grow faster and get more bandwidth, as with Reno.
-- **Late arrivals.** A flow that starts while a queue already exists measures the queued RTT as its base delay, sees less extra delay than the other flows, and takes more than its share. TCP Vegas has the same problem.
-- **Against CUBIC and Reno.** Loss-based flows fill the buffer until loss. This algorithm sees extra delay above target and keeps backing off, so on a deep-buffer bottleneck it gets less than its share.
-
-**Assumptions.** The fastest recent RTT is the propagation delay. RTT growth comes from queueing at the bottleneck. Loss with little extra delay is random rather than congestion. Goodput can be measured once per round trip.
-
-**Limitations.** RTT noise, such as jitter from WSL2's NAT, can look like extra delay and end start-up too early. The pseudocode leaves "large", "noticeable", "a few", and the target value unspecified, and performance depends on those choices. As above, it loses bandwidth to loss-based flows on deep buffers, is unfair to longer-RTT flows, and favors late arrivals.
+**TODO:** design choices; whether competing flows share bandwidth fairly and converge to a stable operating point; assumptions; expected limitations.
 
 ## AI use
 
