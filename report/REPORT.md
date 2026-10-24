@@ -50,11 +50,11 @@ With no arguments it runs the Part 3 pipeline into `results/part3/`. Arguments a
 
 The client talks to the iperf3 server over plain sockets and never calls the `iperf3` binary. One test is handled by [`run_test()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L141-L224):
 
-1. **Control connection** ([L143–L155](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L149-L161)): connect over TCP and send a random 36-character cookie followed by a null byte.
-2. **Parameter exchange** ([L157–L164](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L163-L170)): wait for `PARAM_EXCHANGE`, then send a 4-byte length and the JSON test parameters.
-3. **Data connection** ([L166–L174](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L172-L180)): on `CREATE_STREAMS`, open a second TCP connection and send the same cookie.
-4. **Transmission** ([L176–L191](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L182-L197)): after `TEST_START` and `TEST_RUNNING`, send 128 KiB blocks until `--time` seconds have passed.
-5. **Termination** ([L193–L213](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L201-L224)): send `TEST_END`, exchange JSON results, read `DISPLAY_RESULTS`, send `IPERF_DONE`, and close both sockets.
+1. **Control connection** ([L149–L161](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L149-L161)): connect over TCP and send a random 36-character cookie followed by a null byte.
+2. **Parameter exchange** ([L163–L170](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L163-L170)): wait for `PARAM_EXCHANGE`, then send a 4-byte length and the JSON test parameters.
+3. **Data connection** ([L172–L180](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L172-L180)): on `CREATE_STREAMS`, open a second TCP connection and send the same cookie.
+4. **Transmission** ([L182–L197](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L182-L197)): after `TEST_START` and `TEST_RUNNING`, send 128 KiB blocks until `--time` seconds have passed.
+5. **Termination** ([L201–L224](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L201-L224)): send `TEST_END`, exchange JSON results, read `DISPLAY_RESULTS`, send `IPERF_DONE`, and close both sockets.
 
 Every failure raises an exception that [`run_destination()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L311-L340) logs. The test is retried once after 2 s (`--retries`, default 1), and if it fails again [`main()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L434-L447) moves on to the next server. A busy or overloaded server replies with `ACCESS_DENIED` instead of `PARAM_EXCHANGE`, and a server that rejects the parameters replies with something other than `CREATE_STREAMS`; both fail the state check. Both sockets have a 10 s timeout, so a server that never answers raises `socket.timeout` (66.35.20.123:30001 failed this way in our run). If the server closes the connection early, the next read comes back empty or raises `ConnectionResetError`.
 
@@ -97,9 +97,9 @@ All Part 2 runs used `cubic`, the kernel default. We read the algorithm back fro
 
 ### (a) Extracting TCP socket statistics
 
-The client reads `TCP_INFO` from the data socket once before sending, then after each `sendall()` once at least `--interval` (1 s) has passed ([L180–L191](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L186-L197)). Goodput and the TCP stats come from the same read, so they share a timestamp.
+The client reads `TCP_INFO` from the data socket once before sending, then after each `sendall()` once at least `--interval` (1 s) has passed ([L186–L197](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L186-L197)). Goodput and the TCP stats come from the same read, so they share a timestamp.
 
-**Decoding format.** [`tcp_info()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L33-L37) unpacks the buffer as Linux `struct tcp_info` (from `include/uapi/linux/tcp.h`) up to `tcpi_snd_wnd`, which is 232 bytes on kernel 5.4 and newer. The format string and field names are at [L14–L29](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L15-L30):
+**Decoding format.** [`tcp_info()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L33-L37) unpacks the buffer as Linux `struct tcp_info` (from `include/uapi/linux/tcp.h`) up to `tcpi_snd_wnd`, which is 232 bytes on kernel 5.4 and newer. The format string and field names are at [L15–L30](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L15-L30):
 
 ```
 TCP_INFO_FMT = "=8B24I4Q6IQ3Q2I2Q2I2I"   # 232 bytes, kernel 6.6.87.2-microsoft-standard-WSL2
@@ -123,7 +123,7 @@ TCP_INFO_FMT = "=8B24I4Q6IQ3Q2I2Q2I2I"   # 232 bytes, kernel 6.6.87.2-microsoft-
 
 ### (b) Visualization
 
-[`pick_representative()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L300-L303) picks the destination with the median mean goodput, which was 217.18.95.142:5201 (60.4 Mbit/s mean, 93.0 ms min RTT). [`plot_tcp_stats()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L350-L393) generates [`tcp_stats_timeseries.pdf`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/results/part1_2/tcp_stats_timeseries.pdf) (time series, [L301–L323](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L355-L377)) and [`tcp_stats_scatter.pdf`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/results/part1_2/tcp_stats_scatter.pdf) (scatter, [L325–L339](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L379-L393)) at the end of each run, called from [`main()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L474-L483).
+[`pick_representative()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L300-L303) picks the destination with the median mean goodput, which was 217.18.95.142:5201 (60.4 Mbit/s mean, 93.0 ms min RTT). [`plot_tcp_stats()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L350-L393) generates [`tcp_stats_timeseries.pdf`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/results/part1_2/tcp_stats_timeseries.pdf) (time series, [L355–L377](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L355-L377)) and [`tcp_stats_scatter.pdf`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/results/part1_2/tcp_stats_scatter.pdf) (scatter, [L379–L393](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L379-L393)) at the end of each run, called from [`main()`](https://github.com/CS422-Networks-Group/HW2/blob/hw2-fixes/src/main.py#L474-L483).
 
 ![TCP stats over time for 217.18.95.142:5201](figures/tcp_stats_timeseries.png)
 
