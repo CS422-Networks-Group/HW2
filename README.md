@@ -10,12 +10,12 @@ accepts any Python 3.12 patch release and exposes the requirement to Python pack
 python3.12 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 .venv/bin/python src/main.py [input_csv] [--n 10] [--time 60] [--interval 1.0] [--max-attempts 30] \
-                    [--out results] [--representative IP:PORT] [--algorithms cubic reno bbr]
+                    [--out results] [--representative IP:PORT] [--algorithms cubic reno bbr] \n                    [--reps 3] [--pause 5] [--retries 2]
 ```
 
 By default, every selected destination is tested with CUBIC, Reno, and BBR. A destination counts toward `--n` only when
 all requested algorithms finish successfully, so the resulting protocol comparison uses the same destinations.
-With the defaults, ten successful destinations require at least 30 one-minute data transfers.
+Each destination runs every algorithm `--reps` times. The algorithm order rotates each repetition (cubic, reno, bbr; then reno, bbr, cubic; then bbr, cubic, reno) so that no algorithm always goes first. With the defaults, ten successful destinations require at least 90 one-minute data transfers.
 
 All requested algorithms must be available in the local Linux kernel. Check them before a long run with:
 
@@ -45,6 +45,9 @@ With no arguments the container runs `src/main.py data/listed_iperf3_servers.csv
 | `--out` | output directory |
 | `--representative` | destination used for the TCP stats plots (default: the one whose mean goodput is the median across destinations) |
 | `--algorithms` | algorithms to run for every destination (default: `cubic reno bbr`) |
+| `--reps` | repetitions of every algorithm per destination, order rotated each repetition (default 3) |
+| `--pause` | seconds to wait between tests to the same server (default 5) |
+| `--retries` | extra attempts for a failed test before giving up on that server (default 2) |
 
 ### Outputs
 
@@ -52,7 +55,8 @@ With no arguments the container runs `src/main.py data/listed_iperf3_servers.csv
 |---|---|
 | `tcp_stats.csv` | one row per sample: run id, destination, algorithm, goodput, and decoded TCP stats |
 | `goodput.csv` | goodput-only view of the same samples |
-| `summary.csv` | min / median / mean / p95 goodput (Mbit/s) per destination and algorithm |
+| `summary.csv` | min / median / mean / p95 goodput (Mbit/s) per destination and algorithm, pooled over repetitions |
+| `summary_runs.csv` | per-run mean goodput, median srtt, min RTT, median cwnd, and retransmissions (variability across repetitions) |
 | `run_metadata.json` | session id, host kernel, duration, interval, and every destination attempted (ok / failed + error) |
 | `goodput_<algorithm>.pdf` | goodput over time, one panel per destination; generated once per algorithm |
 | `tcp_stats_timeseries_<algorithm>.pdf` | Q2(b)(i): snd_cwnd, RTT, loss proxy, and goodput over time; generated once per algorithm for one shared representative destination |
